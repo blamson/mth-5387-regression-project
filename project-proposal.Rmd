@@ -1,0 +1,132 @@
+---
+title: "Project Proposal"
+author: "Brady Lamson"
+output:
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(readr)
+library(scales)
+```
+
+```{r, echo=FALSE, include=FALSE}
+df <- readr::read_csv("data/usa-housing.csv")
+```
+
+Provide the the following information for your project.
+
+1.  What research question(s) do you hope to answer?
+
+I want to use linear regression to help understand the most important variables in the price of a home. Or, at the very least, get as much insight into it as I can with the data set I have at hand. The conversation around home ownership has changed a lot over the past couple decades. I think it's a very important topic to understand as it becomes harder and harder for young people to break into home ownership and gentrification forces more people out of their homes.
+
+2.  From where did you obtain the data you will use to answer your research question?
+
+I acquired my data from kaggle. The dataset can be found [here](https://www.kaggle.com/datasets/fratzcan/usa-house-prices).
+
+3.  How many observations does your data set have?
+
+```{r}
+df %>% nrow()
+```
+
+4.  Are you merging multiple data sets?
+
+No.
+
+5.  Provide a table listing each variable you are considering for analysis, briefly describe each variable (e.g., the number of disease cases in each region), and the variable type (e.g., numeric, factor, date, etc.).
+
+```{r, echo=FALSE}
+df %>%
+    dplyr::select(c(date, price, bedrooms, bathrooms, sqft_living, yr_built, floors)) %>%
+    head()
+```
+
+| Variable    | Description | Variable Type |
+|----|---|---|
+| date        | The date the property was sold. Will be used for filtering to a specific year. | Date |
+| price       | Response variable. Price in USD of the home. | numeric |
+| bedrooms    | Number of bedrooms | numeric |
+| bathrooms   | Number of bathrooms | numeric |
+| sqft_living | Square footage of the living room | numeric |
+| yr_built    | The year the building was built | numeric |
+| floors      | Number of floors | numeric |
+
+6.  What will your response variable be for answering the research question(s)?
+
+Response variable is price in USD. I feel it is somewhat self explanatory how this response variable answers my research question.
+
+7.  Provide a numeric summary of your response variable.
+
+```{r}
+df$price %>% summary()
+```
+
+8.  Provide a visual summary of your response variable (histogram if discrete, density plot if continuous, bar plot if categorical.)
+
+For this I will include two density plots as there is an extreme positive skew in my data. First will be the unfiltered dataset. Second will filter down to just homes under $2,000,000 in price so we get a better view of the distribution at lower prices.
+
+```{r, echo=FALSE}
+ggplot(data=df, aes(x=price)) +
+    geom_density() +
+    ggtitle("Distribution of Housing Prices") +
+    scale_x_continuous(labels = scales::label_comma()) +
+    scale_y_continuous(labels = scales::label_comma())
+```
+
+```{r, echo=FALSE}
+ggplot(
+    data=df %>% dplyr::filter(price <= 2000000), 
+    aes(x=price)
+) +
+    geom_density() +
+    ggtitle("Distribution of Housing Prices Below $2,000,000") +
+    scale_x_continuous(labels = scales::label_comma()) +
+    scale_y_continuous(labels = scales::label_comma())
+```
+
+
+9.  Provide an appropriate graphical summary for each predictor variable.
+
+```{r, echo=FALSE}
+ggplot(data=df, aes(x=bedrooms)) +
+    geom_histogram() +
+    ggtitle("Number of Bedrooms: Distribution") +
+    labs(x="Bedroom Count", y="Frequency")
+```
+
+```{r, echo=FALSE}
+ggplot(data=df, aes(x=bathrooms)) +
+    geom_histogram(color="black") +
+    ggtitle("Number of Bathrooms: Distribution") +
+    labs(x="Bathroom Count", y="Frequency")
+```
+
+
+```{r, echo=FALSE}
+ggplot(data=df, aes(x=sqft_living)) +
+    geom_density() +
+    ggtitle("Living Room Square Footage: Distribution") +
+    labs(x="Square Footage", y="Density") +
+    scale_y_continuous(labels = scales::label_comma())
+```
+
+```{r, echo=FALSE}
+ggplot(data=df, aes(x=yr_built)) +
+    geom_density() +
+    ggtitle("Year Built: Distribution") +
+    labs(x="Year built", y="Density") +
+    scale_y_continuous(labels = scales::label_comma())
+```
+
+```{r, echo=FALSE}
+ggplot(data=df, aes(x=floors)) +
+    geom_histogram() +
+    ggtitle("Number of Floors: Distribution") +
+    labs(x="Number of Floors", y="Frequency") +
+    scale_y_continuous(labels = scales::label_comma())
+```
+
