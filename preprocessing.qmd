@@ -1,0 +1,132 @@
+---
+title: "data_preprocessing"
+author: "Brady Lamson"
+format: html
+editor: visual
+---
+
+```{r, echo=TRUE, results='hide', message=FALSE}
+library(readxl)
+library(dplyr)
+library(lubridate)
+library(stringr)
+library(ggplot2)
+library(fastDummies)
+```
+
+# Crash Data Ingestion
+
+```{r}
+file_names <- paste0("data/car_accidents/CDOTRM_CD_Crash_Listing_-_", 2021:2023, ".xlsx")
+df <- lapply(
+        file_names, 
+        function(file) {readxl::read_excel(file, guess_max=200000)}
+    ) %>%
+    dplyr::bind_rows()
+```
+
+## Select Columns of Interest
+
+```{r}
+df_trunc <- 
+    df %>% select(
+        "Crash Date", "Number Killed", "Number Injured", "County",
+        "TU-1 NM Alcohol Suspected", "TU-2 NM Alcohol Suspected", 
+        "TU-1 NM Marijuana Suspected", "TU-2 NM Marijuana Suspected",
+        "Weather Condition"
+    )%>%
+    rename_all(~ str_replace_all(tolower(.), "[ -]", "_"))
+```
+
+## Mutate marijuana and alcohol columns
+
+```{r}
+df_trunc <- df_trunc %>%
+    mutate(
+        marijuana_suspected = (
+            (tu_1_nm_marijuana_suspected == "Marijuana Suspected") |
+            (tu_2_nm_marijuana_suspected == "Marijuana Suspected")
+        )
+    )
+```
+
+```{r}
+df_trunc <- df_trunc %>%
+    mutate(
+        alcohol_suspected = (
+            (stringr::str_detect(tu_1_nm_alcohol_suspected, "Yes")) |
+            (stringr::str_detect(tu_2_nm_alcohol_suspected, "Yes"))
+        )
+    )
+```
+
+## Bad Weather Column
+
+```{r}
+bad_weather <- c("Blowing Snow", "Fog", "Freezing Rain or Freezing Drizzle", "Rain", "Sleet or Hail", "Snow")
+
+df_trunc <- df_trunc %>%
+    mutate(
+        bad_weather = weather_condition %in% bad_weather
+    )
+```
+
+## Year and Month Variables
+
+```{r}
+df_trunc <-
+    df_trunc %>%
+    mutate(
+        month = lubridate::month(crash_date),
+        year = lubridate::year(crash_date)
+    )
+```
+
+## Season Column
+
+```{r}
+df_trunc <- df_trunc %>%
+  mutate(
+      season = case_when(
+        month %in% c(12, 1, 2) ~ "winter",
+        month %in% c(3, 4, 5) ~ "spring",
+        month %in% c(6, 7, 8) ~ "summer",
+        month %in% c(9, 10, 11) ~ "fall",
+        TRUE ~ NA_character_  # Default case for safety
+      )
+  ) %>%
+    # Create indicator variables for season
+    dummy_cols(select_columns = "season")
+```
+
+# Crash Data Aggregation
+
+```{r}
+df_agg <- df_trunc %>%
+    group_by(county, year, season) %>%
+    summarise(
+        deaths = sum(number_killed),
+        injuries = sum(number_injured),
+        marijuana_suspected_accidents = sum(marijuana_suspected, na.rm = TRUE),
+        alcohol_suspected_accidents = sum(alcohol_suspected, na.rm = TRUE),
+        bad_weather_accidents = sum(bad_weather)#,
+        #fall_accidents = sum(season_fall),
+        #spring_accidents = sum(season_spring),
+        #summer_accidents = sum(season_summer),
+        #winter_accidents = sum(season_winter)
+    )
+
+df_agg
+```
+
+
+# Load in County Population Data
+
+[Data found here](https://demography.dola.colorado.gov/assets/html/county.html)
+
+```{r}
+county_pop <- readr::read_csv("data/car_accidents/co-county-population.csv")
+```
+
+# Join Datasets
+

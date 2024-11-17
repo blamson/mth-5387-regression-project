@@ -1,0 +1,406 @@
+---
+title: "Project Proposal"
+author: "Brady Lamson"
+format: html
+editor: visual
+self-contained: true
+toc: true
+---
+
+# Overview
+
+This proposal will be contained within two key parts. First, the setup. This includes data ingestion, data wrangling and aggregation. Second is the proposal itself including answers to all questions within the template provided. Please use the table of contents to quickly navigate if the setup section is not of interest.
+
+# Setup
+
+## Imports
+
+```{r, echo=TRUE, results='hide', message=FALSE}
+library(readxl)
+library(dplyr)
+library(lubridate)
+library(stringr)
+library(ggplot2)
+```
+
+## The Data Overall
+
+```{r}
+file_names <- paste0("data/car_accidents/CDOTRM_CD_Crash_Listing_-_", 2021:2023, ".xlsx")
+df <- lapply(
+        file_names, 
+        function(file) {readxl::read_excel(file, guess_max=200000)}
+    ) %>%
+    dplyr::bind_rows()
+```
+
+```{r}
+# Data Dictionary
+dict <- readxl::read_excel("data/CDOTRM_CD_Crash_Data_Dictionary_-_9-20-2023.xlsx", col_names = T, skip = 2)
+```
+
+```{r}
+df %>% colnames()
+```
+
+## Cleaning
+
+```{r}
+df_trunc <- 
+    df %>% select(
+        "Crash Date", "Number Killed", "Number Injured", "County",
+        "TU-1 NM Alcohol Suspected", "TU-2 NM Alcohol Suspected", 
+        "TU-1 NM Marijuana Suspected", "TU-2 NM Marijuana Suspected",
+        "Weather Condition"
+    )%>%
+    rename_all(~ str_replace_all(tolower(.), "[ -]", "_"))
+
+str(df_trunc)
+```
+
+
+## EDA
+
+### Weather and Road Conditions
+
+```{r}
+df_trunc$weather_condition %>% table()
+```
+
+
+### Alcohol and Marijuana
+
+```{r}
+df_trunc %>% 
+    filter(
+        !is.na(tu_1_nm_marijuana_suspected) | 
+        !is.na(tu_2_nm_marijuana_suspected)
+    ) %>%
+    select(crash_date, tu_1_nm_marijuana_suspected, tu_2_nm_marijuana_suspected)
+```
+
+```{r}
+df_trunc %>% 
+    select(tu_1_nm_alcohol_suspected) %>% 
+    distinct()
+```
+
+```{r}
+df_trunc %>% 
+    select(tu_1_nm_marijuana_suspected) %>% 
+    distinct()
+```
+
+
+### Response Variable
+
+```{r}
+df_trunc$number_killed %>% unique()
+```
+
+## Data Wrangling and Aggregation
+
+### Marijuana Suspected Variable
+
+```{r}
+df_trunc <- df_trunc %>%
+    mutate(
+        marijuana_suspected = (
+            (tu_1_nm_marijuana_suspected == "Marijuana Suspected") |
+            (tu_2_nm_marijuana_suspected == "Marijuana Suspected")
+        )
+    )
+
+print("Sanity Check")
+df_trunc %>%
+    filter(marijuana_suspected == TRUE) %>%
+    select(tu_1_nm_marijuana_suspected, tu_2_nm_marijuana_suspected, marijuana_suspected) %>%
+    head(10) %>%
+    knitr::kable()
+```
+
+### Alcohol Use Variable
+
+```{r}
+df_trunc <- df_trunc %>%
+    mutate(
+        alcohol_suspected = (
+            (stringr::str_detect(tu_1_nm_alcohol_suspected, "Yes")) |
+            (stringr::str_detect(tu_2_nm_alcohol_suspected, "Yes"))
+        )
+    )
+
+print("Sanity Check")
+df_trunc %>% 
+    filter(alcohol_suspected == TRUE) %>%
+    select(tu_1_nm_alcohol_suspected, tu_2_nm_alcohol_suspected, alcohol_suspected) %>%
+    head(10) %>%
+    knitr::kable() 
+```
+
+### Weather Variable
+
+For this I want to create a new "bad weather" variable. It's arbitrary how I select these but this will help me utilize this information after aggregation.
+
+```{r}
+df_trunc$weather_condition %>% unique()
+```
+
+Let's consider the following "bad weather"
+
+- Blowing snow
+- Fog
+- Freezing Rain or Freezing Drizzle
+- Rain
+- Sleet or Hail
+- Snow
+
+```{r}
+bad_weather <- c("Blowing Snow", "Fog", "Freezing Rain or Freezing Drizzle", "Rain", "Sleet or Hail", "Snow")
+
+df_trunc <- df_trunc %>%
+    mutate(
+        bad_weather = weather_condition %in% bad_weather
+    )
+```
+
+### Month
+
+Just pulling the month out of the date.
+
+```{r}
+df_trunc <-
+    df_trunc %>%
+    mutate(month = lubridate::month(crash_date))
+```
+
+
+### Aggregation
+
+```{r}
+df_agg <- 
+    df_trunc %>%
+    group_by(
+        month = lubridate::month(crash_date),
+        county
+    ) %>%
+    summarise(
+        deaths = sum(number_killed),
+        accidents = n(),
+        injuries = sum(number_injured),
+        fatal_accidents = sum(number_killed > 0),
+        alcohol_suspected_accidents = sum(alcohol_suspected, na.rm = TRUE),
+        marijuana_suspected_accidents = sum(marijuana_suspected, na.rm = TRUE),
+        bad_weather_accidents = sum(bad_weather, na.rm = TRUE)
+    )
+```
+
+
+# Final Dataset
+
+```{r}
+knitr::kable(head(df_agg))
+```
+
+
+# Proposal
+
+## 1. Research Question
+
+What research question(s) do you hope to answer?
+
+My hope with this research is to look at various aspects of car accidents to see what results in more deaths. If we can see relationships between counties, months, weather and drug related accidents with deaths we may be able to better prioritize tasks to make driving safer for everyone in Colorado. There is a lot of additional information I would like to examine and include but I hope this can at least kick off a conversation on the topic.
+
+## 2. Data Source
+
+From where did you obtain the data you will use to answer your research question?
+
+My data was pulled directly from the colorado department of transportation. 
+
+They include data going all the way back to 2007 with a ton of information on traffic accidents in the state.
+
+This data can be found [here](https://www.codot.gov/safety/traffic-safety/data-analysis/crash-data).
+
+## 3. Observations
+
+How many observations does your data set have?
+
+I will include both pre and post-aggregation counts.
+
+```{r}
+df %>%nrow()
+df_agg %>% nrow()
+```
+
+
+## 4. Data merging/joins
+
+Are you merging multiple data sets?
+
+I am combining the 2021, 2022 and 2023 data sets for this analysis.
+
+## 5. Variable Info
+
+Provide a table listing each variable you are considering for analysis, briefly describe each variable (e.g., the number of disease cases in each region), and the variable type (e.g., numeric, factor, date, etc.).
+
+NOTE: All variables are aggregated as a 3 year sum for the month and grouped by county.
+
+| Variable    | Description | Variable Type |
+|----|---|---|
+| month        | Month of the crash | Numeric, discrete |
+| county        | Colorado county the crash occurred in | character, categorical |
+|   deaths    | Response variable. Total number of deaths  | numeric, continuous |
+|  fatal accidents    | Other potential response variable. Total number of accidents that resulted in death | numeric, continuous |
+|  accidents    | Total number of accidents | numeric, continuous |
+|  injuries    | Total number of injuries  | numeric, continuous |
+|  alcohol suspected accidents    | Total number of accidents that were suspected of alcohol use | numeric, continuous |
+|  marijuana suspected accidents    | Total number of accidents that were suspected of marijuana use | numeric, continuous |
+|  bad weather accidents    | Total number of accidents that ocurred during bad weather | numeric, continuous |
+
+## 6. Response Variable
+
+What will your response variable be for answering the research question(s)?
+
+My response variable with either be the total number of deaths or the number of fatal accidents. I'm not sure which one would be more informative. 
+
+## 7. Response summary
+
+Provide a numeric summary of your response variable.
+
+```{r}
+df_agg$deaths %>% summary()
+```
+
+
+## 8. Response Visual Summary
+
+Provide a visual summary of your response variable (histogram if discrete, density plot if continuous, bar plot if categorical.)
+
+```{r}
+df_agg %>%
+    ggplot(aes(x=deaths)) +
+    geom_density() +
+    labs(x="Deaths", y="Density") +
+    ggtitle(
+        "Distribution of Per Month County Car Accident Deaths",
+        subtitle="Deaths represent overall totals from 2021-2023 per month."
+    )
+```
+
+```{r}
+df_agg %>%
+    ggplot(aes(x=fatal_accidents)) +
+    geom_density() +
+    labs(x="Fatal Accidents", y="Density") +
+    ggtitle(
+        "Distribution of Per Month County Car Accidents That Resulted in Death",
+        subtitle="Values represent overall totals from 2021-2023 per month."
+    )
+```
+
+## 9. Predictor Summaries
+
+Provide an appropriate graphical summary for each predictor variable.
+
+NOTE: NONE OF THESE PLOTS FEATURE ANY GROUPING BY COUNTY/MONTH. LET ME KNOW IF THAT WOULD BE OF INTEREST.
+
+### Month
+
+For month let's examine the original dataset I'm pulling from.
+
+```{r}
+ggplot(df_trunc, aes(x=factor(month))) +
+    geom_bar() +
+    labs(
+        x="Month", 
+        y="Frequency",
+        title="Frequency Breakdown of Months"
+    )
+```
+
+### County
+
+Yet again, let's pull from the un-aggregated data here.
+
+I personally feel a graphical representation would be really messy due to how many categories there are here. So I will be providing a table instead.
+
+```{r}
+df_trunc$county %>% table()
+```
+
+### Accidents
+
+```{r}
+df_agg %>%
+    ggplot(aes(x=accidents)) +
+    geom_density() +
+    labs(x="Accidents", y="Density") +
+    ggtitle(
+        "Distribution of Per Month County Car Accidents",
+        subtitle="Accidents represent overall totals from 2021-2023 per month."
+    )
+```
+
+### Injuries
+
+```{r}
+df_agg %>%
+    ggplot(aes(x=injuries)) +
+    geom_density() +
+    labs(x="Injuries", y="Density") +
+    ggtitle(
+        "Distribution of Per Month County Car Accident Injuries",
+        subtitle="Injuries represent overall totals from 2021-2023 per month."
+    )
+```
+
+### Alcohol Suspected Incidents
+
+```{r}
+df_agg %>%
+    ggplot(aes(x=alcohol_suspected_accidents)) +
+    geom_bar() +
+    labs(x="Alcohol Suspected Accidents", y="Frequency") +
+    ggtitle(
+        "Distribution of Per Month County Car Accidents With Suspected Alcohol Use",
+        subtitle="Values represent overall totals from 2021-2023 per month."
+    )
+```
+
+### Marijuana Suspected Incidents
+
+```{r}
+df_agg %>%
+    ggplot(aes(x=marijuana_suspected_accidents)) +
+    geom_bar() +
+    labs(x="Marijuana Suspected Accidents", y="Frequency") +
+    ggtitle(
+        "Distribution of Per Month County Car Accidents With Suspected Marijuana Use",
+        subtitle="Values represent overall totals from 2021-2023 per month."
+    )
+```
+
+### Bad Weather Accidents
+
+```{r}
+df_agg %>%
+    ggplot(aes(x=bad_weather_accidents)) +
+    geom_density() +
+    labs(x="Bad Weather Accidents", y="Density") +
+    ggtitle(
+        "Distribution of Per Month County Car Accidents With Bad Weather",
+        subtitle="Values represent overall totals from 2021-2023 per month."
+    )
+```
+
+# Limitations
+
+I'm doing some aggregation to make this data workable for this project so this introduces some flaws in any downstream analysis.
+
+For starters, I do not in any way account for county population in my calculations. This could obviously be handled better. Accidents per capita is likely more informative than just a raw count. 
+
+Also, I'm grouping by month and including data from 3 years. This alters interpretations of the data quite a bit and hinders model usability. The aggregated data shows total deaths for each month per county over 3 years. It is not *accidents per month*. All 3 years are grouped together into a sum. This was done purely to wrangle the death count into a form suitable for this project. This is not how we would want to approach things from a practical perspective. 
+
+I will need to be very precise with my language in the project due to this.
+
+Lastly and, maybe most importantly, is how the interpretation of many predictors changes with aggregation. Bad weather could be a fascinating predictor variable for individual accidents, but must now change in functionality to fit with the new format. I worry about the harm this does to the variables value. What would be an interesting factor variable now just becomes a simple numeric sum. I feel we lose a lot of information in that transformation.
