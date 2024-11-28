@@ -12,36 +12,52 @@ library(lubridate)
 library(stringr)
 library(ggplot2)
 library(fastDummies)
+library(skimr)
 ```
 
 # Crash Data Ingestion
 
 ```{r}
-file_names <- paste0("data/car_accidents/CDOTRM_CD_Crash_Listing_-_", 2021:2023, ".xlsx")
-df <- lapply(
+# The full datasets are huge so I'd like to avoid reading them in if possible.
+
+filtered_data <- "../data/car_accidents/truncated_accident_data.csv"
+print(paste0("Checking for preprocessed data file. Path: <", filtered_data, ">"))
+if (file.exists(filtered_data)) {
+    print("Preprocessed data located, loading")
+    df <- readr::read_csv(filtered_data)
+} else {
+    print("Preprocessed data not located, creating manually.")
+    file_names <- paste0("../data/car_accidents/CDOTRM_CD_Crash_Listing_-_", 2021:2023, ".xlsx")
+    
+    df <- lapply(
         file_names, 
         function(file) {readxl::read_excel(file, guess_max=200000)}
     ) %>%
-    dplyr::bind_rows()
-```
-
-## Select Columns of Interest
-
-```{r}
-df_trunc <- 
-    df %>% select(
+    dplyr::bind_rows() %>% 
+    select(
         "Crash Date", "Number Killed", "Number Injured", "County",
         "TU-1 NM Alcohol Suspected", "TU-2 NM Alcohol Suspected", 
         "TU-1 NM Marijuana Suspected", "TU-2 NM Marijuana Suspected",
         "Weather Condition"
-    )%>%
+    ) %>%
     rename_all(~ str_replace_all(tolower(.), "[ -]", "_"))
+    
+    print("Data processed successfully. Writing to csv.")
+    readr::write_csv(df, file = filtered_data)
+    print(paste0("Preprocessed data written to path: <", filtered_data, ">"))
+}
+
 ```
+
+```{r}
+df %>% head()
+```
+
 
 ## Mutate marijuana and alcohol columns
 
 ```{r}
-df_trunc <- df_trunc %>%
+df <- df %>%
     mutate(
         marijuana_suspected = (
             (tu_1_nm_marijuana_suspected == "Marijuana Suspected") |
@@ -51,7 +67,7 @@ df_trunc <- df_trunc %>%
 ```
 
 ```{r}
-df_trunc <- df_trunc %>%
+df <- df %>%
     mutate(
         alcohol_suspected = (
             (stringr::str_detect(tu_1_nm_alcohol_suspected, "Yes")) |
@@ -68,7 +84,7 @@ bad_weather <- c(
     "Rain", "Sleet or Hail", "Snow"
 )
 
-df_trunc <- df_trunc %>%
+df <- df %>%
     mutate(
         bad_weather = weather_condition %in% bad_weather
     )
@@ -77,8 +93,8 @@ df_trunc <- df_trunc %>%
 ## Year and Month Variables
 
 ```{r}
-df_trunc <-
-    df_trunc %>%
+df <-
+    df %>%
     mutate(
         month = lubridate::month(crash_date),
         year = lubridate::year(crash_date)
@@ -88,7 +104,7 @@ df_trunc <-
 ## Season Column
 
 ```{r}
-df_trunc <- df_trunc %>%
+df <- df %>%
   mutate(
       season = case_when(
         month %in% c(12, 1, 2) ~ "winter",
@@ -103,7 +119,7 @@ df_trunc <- df_trunc %>%
 # Crash Data Aggregation
 
 ```{r}
-df_agg <- df_trunc %>%
+df_agg <- df %>%
     group_by(county, year, season) %>%
     summarise(
         deaths = sum(number_killed),
@@ -122,7 +138,7 @@ df_agg
 [Data found here](https://demography.dola.colorado.gov/assets/html/county.html)
 
 ```{r}
-county_pop <- readr::read_csv("data/car_accidents/co-county-population.csv")
+county_pop <- readr::read_csv("../data/demographic_data/co-county-population.csv")
 ```
 
 ```{r}
@@ -147,12 +163,13 @@ We just want to make sure all of the counties in our dataset are represented. Th
 setdiff(df_agg$county, pop_counties$area)
 intersect(df_agg$county, pop_counties$area)
 ```
+
 # Median Income Data
 
 Source: [From the NIH which pulls from the Census Bureau](https://hdpulse.nimhd.nih.gov/data-portal/social/table?age=001&age_options=ageall_1&demo=00011&demo_options=income_3&race=00&race_options=race_7&sex=0&sex_options=sexboth_1&socialtopic=030&socialtopic_options=social_6&statefips=08&statefips_options=area_states)
 
 ```{r}
-income <- readr::read_csv("data/demographic_data/HDPulse_data_export.csv") %>% 
+income <- readr::read_csv("../data/demographic_data/HDPulse_data_export.csv") %>% 
     select(County, "Value (Dollars)") %>%
     tidyr::drop_na() %>%
     dplyr::rename(county = County, median_income = "Value (Dollars)") %>%
@@ -165,7 +182,7 @@ income
 Data Link: [Here](https://documentation-resources.opendatasoft.com/explore/dataset/average-commute-time-by-county/table/?refine.state=Colorado)
 
 ```{r}
-commute_data <- readr::read_delim("data/demographic_data/average-commute-time-by-county.csv", delim = ";")
+commute_data <- readr::read_delim("../data/demographic_data/average-commute-time-by-county.csv", delim = ";")
 commute_data <- commute_data[, 1:2] %>%
     rename(county = name, mean_commuting_time = `Mean Commuting Time`) %>%
     mutate(county = stringr::str_replace(county, " County, Colorado", "") %>% toupper())
@@ -193,12 +210,11 @@ df_final <- df_agg %>%
         mean_commuting_time = mean_commuting_time
     )
 ```
+
 ```{r}
 df_final
 ```
 
-
 ```{r}
-readr::write_csv(df_final, file = "data/car_accidents/accidents.csv")
+readr::write_csv(df_final, file = "../data/car_accidents/accidents.csv")
 ```
-
