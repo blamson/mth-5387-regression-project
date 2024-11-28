@@ -1,0 +1,204 @@
+---
+title: "data_preprocessing"
+author: "Brady Lamson"
+format: html
+editor: visual
+---
+
+```{r, echo=TRUE, results='hide', message=FALSE}
+library(readxl)
+library(dplyr)
+library(lubridate)
+library(stringr)
+library(ggplot2)
+library(fastDummies)
+```
+
+# Crash Data Ingestion
+
+```{r}
+file_names <- paste0("data/car_accidents/CDOTRM_CD_Crash_Listing_-_", 2021:2023, ".xlsx")
+df <- lapply(
+        file_names, 
+        function(file) {readxl::read_excel(file, guess_max=200000)}
+    ) %>%
+    dplyr::bind_rows()
+```
+
+## Select Columns of Interest
+
+```{r}
+df_trunc <- 
+    df %>% select(
+        "Crash Date", "Number Killed", "Number Injured", "County",
+        "TU-1 NM Alcohol Suspected", "TU-2 NM Alcohol Suspected", 
+        "TU-1 NM Marijuana Suspected", "TU-2 NM Marijuana Suspected",
+        "Weather Condition"
+    )%>%
+    rename_all(~ str_replace_all(tolower(.), "[ -]", "_"))
+```
+
+## Mutate marijuana and alcohol columns
+
+```{r}
+df_trunc <- df_trunc %>%
+    mutate(
+        marijuana_suspected = (
+            (tu_1_nm_marijuana_suspected == "Marijuana Suspected") |
+            (tu_2_nm_marijuana_suspected == "Marijuana Suspected")
+        )
+    )
+```
+
+```{r}
+df_trunc <- df_trunc %>%
+    mutate(
+        alcohol_suspected = (
+            (stringr::str_detect(tu_1_nm_alcohol_suspected, "Yes")) |
+            (stringr::str_detect(tu_2_nm_alcohol_suspected, "Yes"))
+        )
+    )
+```
+
+## Bad Weather Column
+
+```{r}
+bad_weather <- c(
+    "Blowing Snow", "Fog", "Freezing Rain or Freezing Drizzle", 
+    "Rain", "Sleet or Hail", "Snow"
+)
+
+df_trunc <- df_trunc %>%
+    mutate(
+        bad_weather = weather_condition %in% bad_weather
+    )
+```
+
+## Year and Month Variables
+
+```{r}
+df_trunc <-
+    df_trunc %>%
+    mutate(
+        month = lubridate::month(crash_date),
+        year = lubridate::year(crash_date)
+    )
+```
+
+## Season Column
+
+```{r}
+df_trunc <- df_trunc %>%
+  mutate(
+      season = case_when(
+        month %in% c(12, 1, 2) ~ "winter",
+        month %in% c(3, 4, 5) ~ "spring",
+        month %in% c(6, 7, 8) ~ "summer",
+        month %in% c(9, 10, 11) ~ "fall",
+        TRUE ~ NA_character_  # Default case for safety
+      )
+  )
+```
+
+# Crash Data Aggregation
+
+```{r}
+df_agg <- df_trunc %>%
+    group_by(county, year, season) %>%
+    summarise(
+        deaths = sum(number_killed),
+        injuries = sum(number_injured),
+        marijuana_suspected_accidents = sum(marijuana_suspected, na.rm = TRUE),
+        alcohol_suspected_accidents = sum(alcohol_suspected, na.rm = TRUE),
+        bad_weather_accidents = sum(bad_weather)
+    ) %>%
+    ungroup()
+
+df_agg
+```
+
+# Load in County Population Data
+
+[Data found here](https://demography.dola.colorado.gov/assets/html/county.html)
+
+```{r}
+county_pop <- readr::read_csv("data/car_accidents/co-county-population.csv")
+```
+
+```{r}
+county_pop <- county_pop %>%
+    rename_all(~ str_replace_all(tolower(.), "july ", "")) %>%
+    tidyr::pivot_longer(!area, names_to = "year", values_to = "population") %>%
+    mutate(
+        area = str_replace(area, " COUNTY", ""),
+        year = as.numeric(year)
+    )
+```
+
+```{r}
+county_pop %>% head()
+```
+
+# Compare Counties
+
+We just want to make sure all of the counties in our dataset are represented. There are 64 counties in Colorado so we're good.
+
+```{r}
+setdiff(df_agg$county, pop_counties$area)
+intersect(df_agg$county, pop_counties$area)
+```
+# Median Income Data
+
+Source: [From the NIH which pulls from the Census Bureau](https://hdpulse.nimhd.nih.gov/data-portal/social/table?age=001&age_options=ageall_1&demo=00011&demo_options=income_3&race=00&race_options=race_7&sex=0&sex_options=sexboth_1&socialtopic=030&socialtopic_options=social_6&statefips=08&statefips_options=area_states)
+
+```{r}
+income <- readr::read_csv("data/demographic_data/HDPulse_data_export.csv") %>% 
+    select(County, "Value (Dollars)") %>%
+    tidyr::drop_na() %>%
+    dplyr::rename(county = County, median_income = "Value (Dollars)") %>%
+    dplyr::mutate(county = stringr::str_replace(county, " County", "") %>% toupper())
+income
+```
+
+# Commute Time
+
+Data Link: [Here](https://documentation-resources.opendatasoft.com/explore/dataset/average-commute-time-by-county/table/?refine.state=Colorado)
+
+```{r}
+commute_data <- readr::read_delim("data/demographic_data/average-commute-time-by-county.csv", delim = ";")
+commute_data <- commute_data[, 1:2] %>%
+    rename(county = name, mean_commuting_time = `Mean Commuting Time`) %>%
+    mutate(county = stringr::str_replace(county, " County, Colorado", "") %>% toupper())
+
+commute_data
+```
+
+# Join Datasets
+
+```{r}
+df_final <- df_agg %>%
+    dplyr::left_join(county_pop, by=dplyr::join_by(year, county == area)) %>%
+    dplyr::left_join(income, by=dplyr::join_by(county == county)) %>%
+    dplyr::left_join(commute_data, by=dplyr::join_by(county == county)) %>%
+    mutate(pop_per_100k = population / 100000) %>%
+    group_by(county, season) %>%
+    summarise(
+        pop_per_100k = mean(pop_per_100k),
+        deaths = sum(deaths) / pop_per_100k,
+        injuries = sum(injuries) / pop_per_100k,
+        marijuana_suspected_accidents = sum(marijuana_suspected_accidents, na.rm = TRUE) / pop_per_100k,
+        alcohol_suspected_accidents = sum(alcohol_suspected_accidents, na.rm = TRUE) / pop_per_100k,
+        bad_weather_accidents = sum(bad_weather_accidents) / pop_per_100k,
+        median_income = median_income,
+        mean_commuting_time = mean_commuting_time
+    )
+```
+```{r}
+df_final
+```
+
+
+```{r}
+readr::write_csv(df_final, file = "data/car_accidents/accidents.csv")
+```
+

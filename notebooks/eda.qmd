@@ -1,0 +1,314 @@
+---
+title: "eda"
+author: "Brady Lamson"
+format: html
+editor: visual
+---
+
+# Tasks
+
+-   [x] Get basic distribution of every regressor
+
+-   [x] Plot each regressor against deaths
+
+-   [x] Examine possible transformations for necessary regressors
+
+-   [ ] Look at distributions of regressors grouped by season
+
+```{r}
+library(readxl)
+library(dplyr)
+library(lubridate)
+library(stringr)
+library(ggplot2)
+library(fastDummies)
+library(plotly)
+```
+
+```{r}
+data <- readr::read_csv(file = "data/car_accidents/accidents.csv")
+data %>% head()
+```
+```{r}
+data %>% colnames()
+```
+
+Response variable is:
+- deaths
+
+Regressors are:
+- injuries
+- marijuana
+- alcohol
+- bad weather
+- median income
+- mean commuting time
+
+# Sanity Checks
+
+## Season
+
+This is by definition but all seasons should be just as frequent. 
+
+```{r}
+table(data$season)
+```
+
+
+# Univariate Analysis
+
+## Deaths
+
+```{r}
+data %>%
+    ggplot(aes(x=deaths)) +
+    geom_density() +
+    ggtitle("Deaths in Car Accidents") +
+    labs(x="Deaths per Capita", y="Density")
+```
+
+Appears to follow a log-normal distribution, candidate for log-transformation later.
+
+## Injuries
+
+```{r}
+data %>%
+    ggplot(aes(x=injuries)) +
+    # geom_histogram(color="black") +
+    geom_density() +
+    ggtitle("Injuries in Car Accidents") +
+    labs(x="Injuries per Capita", y="Density")
+```
+
+## Marijuana suspected accidents
+
+```{r}
+data %>%
+    ggplot(aes(x=marijuana_suspected_accidents)) +
+    # geom_histogram(color="black") +
+    geom_density() +
+    ggtitle("Marijuana Suspected Accidents") +
+    labs(x="Accidents", y="Density")
+```
+
+## Alcohol suspected accidents
+
+```{r}
+data %>%
+    ggplot(aes(x=alcohol_suspected_accidents)) +
+    # geom_histogram(color="black") +
+    geom_density() +
+    ggtitle("Alcohol Suspected Accidents") +
+    labs(x="Accidents", y="Density")
+```
+
+## Bad Weather
+
+```{r}
+data %>%
+    ggplot(aes(x=bad_weather_accidents)) +
+    # geom_histogram(color="black") +
+    geom_density() +
+    ggtitle("Bad Weather Accidents") +
+    labs(x="Accidents", y="Density")
+```
+
+## Median Income
+
+```{r}
+data %>%
+    ggplot(aes(x=median_income)) +
+    geom_density() +
+    ggtitle("Median Income of Colorado Counties") +
+    labs(x="Income ($)", y="Density")
+```
+
+## Mean Commute Time
+
+```{r}
+data %>%
+    ggplot(aes(x=mean_commuting_time)) +
+    geom_density() +
+    ggtitle("Mean Commute Time of Colorado Residents by County") +
+    labs(x="Minutes", y="Density")
+```
+
+## Takeaways
+
+Most of these plots tend to be unimodal with a long positive tail. This isn't too surprising. We can probably assume the average accident involves 0 deaths, 0 injuries, regular weather and no drugs involved. So a lot of my variables involves deviations from a *typical* accident.
+
+Median income may require some normalization later just to standardize the values and make all the numbers smaller. 
+
+Of note is that many of these variables may benefit from a log-transformation due to them following a seemingly log-normal distribution. 
+
+# Bi-Variate Analysis
+
+Here we'll look into how each regressor relates to the response variable.
+
+## Injuries
+
+```{r}
+data %>%
+    ggplot(aes(x=deaths, y=injuries, color=season)) +
+    geom_point()
+```
+
+## Marijuana
+
+```{r}
+data %>%
+    ggplot(aes(x=deaths, y=marijuana_suspected_accidents, color=season)) +
+    geom_point()
+```
+
+## Alcohol
+
+```{r}
+data %>%
+    ggplot(aes(x=deaths, y=alcohol_suspected_accidents, color=season)) +
+    geom_point()
+```
+
+## Bad Weather
+
+```{r}
+data %>%
+    ggplot(aes(x=deaths, y=bad_weather_accidents, color=season)) +
+    geom_point()
+```
+
+## Median Income
+
+```{r}
+data %>%
+    ggplot(aes(x=deaths, y=median_income, color=season)) +
+    geom_point()
+```
+
+## Mean Commute Time
+
+```{r}
+data %>%
+    ggplot(aes(x=deaths, y=mean_commuting_time, color=season)) +
+    geom_point()
+```
+
+```{r}
+data %>%
+    ggplot(aes(x=injuries, y=mean_commuting_time, color=season)) +
+    geom_point()
+```
+
+## Season
+
+```{r}
+data %>%
+    ggplot(aes(x=season, y=deaths)) +
+    geom_bar(stat="identity")
+```
+
+## Takeaways
+
+There are shockingly few relationships here to speak of. I worry none of these predictors will perform particularly well, but we'll see.
+
+# Transformations
+
+Wary about transformations due to the complications to model coefficient interpretation, but let's at least examine a few.
+
+Here are the variables worth consideration for transformation
+
+- deaths
+- injuries
+- marijuana
+- alcohol
+- bad weather
+
+## Deaths
+
+```{r}
+data %>%
+    ggplot(aes(x=log(deaths))) +
+    geom_density() +
+    ggtitle("Deaths in Car Accidents") +
+    labs(x="Deaths per Capita", y="Density")
+```
+
+## Injuries
+
+```{r}
+data %>%
+    ggplot(aes(x=log(injuries))) +
+    geom_density() +
+    ggtitle("Injuries in Car Accidents") +
+    labs(x="Injuries per Capita", y="Density")
+```
+
+## Marijuana
+
+```{r}
+data %>%
+    ggplot(aes(x=log(marijuana_suspected_accidents))) +
+    # geom_histogram(color="black") +
+    geom_density() +
+    ggtitle("Marijuana Suspected Accidents") +
+    labs(x="Accidents", y="Density")
+```
+
+## Alcohol
+
+```{r}
+data %>%
+    ggplot(aes(x=log(alcohol_suspected_accidents))) +
+    # geom_histogram(color="black") +
+    geom_density() +
+    ggtitle("Alcohol Suspected Accidents") +
+    labs(x="Accidents", y="Density")
+```
+
+## Bad Weather
+
+```{r}
+data %>%
+    ggplot(aes(x=log(bad_weather_accidents))) +
+    # geom_histogram(color="black") +
+    geom_density() +
+    ggtitle("Bad Weather Accidents") +
+    labs(x="Accidents", y="Density")
+```
+
+## Takeaways
+
+Worth trying to use log transformed bad weather or injuries assuming they don't complicate interpretation too much. May be worth comparing models with and without the transformed variable.
+
+# Checking data Quality
+
+Skeptical of marijuana and alcohol. I have a hunch that data is only being collected in certain counties. Let's look at the original data and check.
+
+```{r}
+file_names <- paste0("data/car_accidents/CDOTRM_CD_Crash_Listing_-_", 2021:2023, ".xlsx")
+og_data <- lapply(
+        file_names, 
+        function(file) {readxl::read_excel(file, guess_max=200000)}
+    ) %>%
+    dplyr::bind_rows()%>%
+    select(
+        "County",
+        "TU-1 NM Alcohol Suspected", "TU-2 NM Alcohol Suspected", 
+        "TU-1 NM Marijuana Suspected", "TU-2 NM Marijuana Suspected",
+    )%>%
+    rename_all(~ str_replace_all(tolower(.), "[ -]", "_"))
+```
+
+```{r}
+og_data %>%
+    group_by(County) %>%
+    summarise(
+        marijuana_counts = sum(is.na())
+    )
+```
+
+```{r}
+skim(og_data)
+```
+
+Yeah we have to ditch alcohol and marijuana as variables. It's built off of too incomplete of data.
