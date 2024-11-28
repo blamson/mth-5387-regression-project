@@ -53,28 +53,16 @@ if (file.exists(filtered_data)) {
 df %>% head()
 ```
 
-
-## Mutate marijuana and alcohol columns
-
-```{r}
-df <- df %>%
-    mutate(
-        marijuana_suspected = (
-            (tu_1_nm_marijuana_suspected == "Marijuana Suspected") |
-            (tu_2_nm_marijuana_suspected == "Marijuana Suspected")
-        )
-    )
-```
+# Data Skimming
+The `skimr` is my favorite way of quickly checking out a new dataset in R. Nice way to check missing values, distributions, summary stats, all in one. Looks great in HTML output too!
 
 ```{r}
-df <- df %>%
-    mutate(
-        alcohol_suspected = (
-            (stringr::str_detect(tu_1_nm_alcohol_suspected, "Yes")) |
-            (stringr::str_detect(tu_2_nm_alcohol_suspected, "Yes"))
-        )
-    )
+df %>% skimr::skim()
 ```
+
+The big takeaway here is I should've done this during the porposal phase. All the alcohol/marijuana variables barely exist at all. I was definitely in a rush when I included these variables as I didn't think to check. This is likely a situation where some counties collect this info but only a select few. This information is useless so we shouldn't include it in the final dataset.
+
+Everything else looks good though!
 
 ## Bad Weather Column
 
@@ -124,8 +112,6 @@ df_agg <- df %>%
     summarise(
         deaths = sum(number_killed),
         injuries = sum(number_injured),
-        marijuana_suspected_accidents = sum(marijuana_suspected, na.rm = TRUE),
-        alcohol_suspected_accidents = sum(alcohol_suspected, na.rm = TRUE),
         bad_weather_accidents = sum(bad_weather)
     ) %>%
     ungroup()
@@ -160,8 +146,8 @@ county_pop %>% head()
 We just want to make sure all of the counties in our dataset are represented. There are 64 counties in Colorado so we're good.
 
 ```{r}
-setdiff(df_agg$county, pop_counties$area)
-intersect(df_agg$county, pop_counties$area)
+setdiff(df_agg$county, county_pop$area)
+intersect(df_agg$county, county_pop$area)
 ```
 
 # Median Income Data
@@ -203,8 +189,6 @@ df_final <- df_agg %>%
         pop_per_100k = mean(pop_per_100k),
         deaths = sum(deaths) / pop_per_100k,
         injuries = sum(injuries) / pop_per_100k,
-        marijuana_suspected_accidents = sum(marijuana_suspected_accidents, na.rm = TRUE) / pop_per_100k,
-        alcohol_suspected_accidents = sum(alcohol_suspected_accidents, na.rm = TRUE) / pop_per_100k,
         bad_weather_accidents = sum(bad_weather_accidents) / pop_per_100k,
         median_income = median_income,
         mean_commuting_time = mean_commuting_time
