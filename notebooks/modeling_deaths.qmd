@@ -1,0 +1,119 @@
+---
+title: "modeling"
+author: "Brady lamson"
+format: html
+editor: visual
+toc: true
+---
+
+# Imports
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(caret)
+library(leaps)
+```
+
+# Data Ingestion
+
+```{r}
+data <- readr::read_csv(file = "../data/car_accidents/accidents.csv")
+predictors <- c("season", "injuries", "bad_weather_accidents", "median_income", "mean_commuting_time")
+data %>% head()
+```
+
+# Last bit of pre-processing
+
+```{r}
+data <- data %>%
+    mutate(season = as.factor(season))
+```
+
+# Deaths as Response
+
+## Variable Selection
+
+### Stepwise Selection
+
+```{r}
+lmod <- lm(deaths ~ . - county - pop_per_100k, data=data)
+```
+
+```{r}
+step(lmod, direction="both")
+```
+
+This model points us towards injuries and mean commuting time as predictors.
+
+### Forward selection w/ BIC
+
+```{r}
+int_lmod <- lm(deaths ~ 1, data=data)
+step(int_lmod, scope = formula(lmod), direction = "forward", k = log(nobs(lmod)))
+```
+
+### Best Subset Regression
+
+```{r}
+rs <- regsubsets(formula(lmod), data=data)
+srs <- summary(rs)
+srs
+```
+
+## Checking Model Structure
+
+Let's examine two of the models chosen in our variable selection and see if anything jumps out to us.
+
+```{r}
+lm2p <- lm(deaths ~ injuries + mean_commuting_time, data=data)
+plot(lm2p$fitted.values, lm2p$residuals)
+```
+
+Okay this looks really bad. These residuals very clearly indicate a structural issue with our model. Let's see if some log transformations fix things. They complicate our interpretation a lot but I'm curious if it fixes the structural issue. It's an easy enough tweak.
+
+```{r}
+lm2p_transformed <- lm(I(log(1 + deaths)) ~ I(log(injuries)) + mean_commuting_time, data=data)
+plot(lm2p_transformed$fitted.values, lm2p_transformed$residuals)
+```
+
+So this does look a LOT better. However we seem to have two distinct groups in our residuals here. The top portion is well behaved, but there is a clear line at the bottom of this plot that is indicating something structurally wrong with our setup here.
+
+### Investigating the Line
+
+Let's see if we can't figure out what's going on with that line. It seems that all of our points of interest are those with residuals less than -1. Let's examine those. To do this we'll join our model output and original dataset so we can investigate.
+
+```{r}
+output_df <- dplyr::data_frame(
+    fitted = lm2p_transformed$fitted.values, 
+    residuals = lm2p_transformed$residuals
+)
+
+# Create ID for joins
+data$ID <- seq.int(nrow(data))
+output_df$ID <- seq.int(nrow(output_df))
+
+problem_obs <- data %>%
+    mutate(deaths_transformed = log(deaths + 1)) %>%
+    dplyr::inner_join(output_df, by="ID") %>%
+    filter(residuals < -1)
+
+problem_obs
+
+print(nrow(problem_obs))
+```
+
+Oh looks like almost all of these have deaths of 0. Thats 43 observations. How many times do 0 deaths occur in our dataset?
+
+```{r}
+data %>% 
+    filter(deaths == 0)
+
+print(nrow(data %>% filter(deaths == 0)))
+```
+
+42 observations. Okay. So that's an enormous issue. This is very clearly a fundamental structural issue tied very inherently to the data. 0 is a reasonable value for the response to be, makes up 42/256 of the data and just doesn't seem to be a good match for this type of problem.
+
+### Conclusion
+
+What we see here is that our model deeply struggles with true response values of 0. I don't think I have any reasonable methods for handling this structural issue with the tools we have in this class. As such I believe throwing in the towel and pivoting to a more well behaved response variable is best for the sake of the project.
