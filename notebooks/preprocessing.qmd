@@ -190,8 +190,8 @@ df_final <- df_agg %>%
         deaths = sum(deaths) / pop_per_100k,
         injuries = sum(injuries) / pop_per_100k,
         bad_weather_accidents = sum(bad_weather_accidents) / pop_per_100k,
-        median_income = median_income,
-        mean_commuting_time = mean_commuting_time
+        median_income = median(median_income),
+        mean_commuting_time = mean(mean_commuting_time)
     )
 ```
 
