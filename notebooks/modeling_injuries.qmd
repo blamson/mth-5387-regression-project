@@ -13,4 +13,100 @@ library(dplyr)
 library(ggplot2)
 library(caret)
 library(leaps)
+library(car)
 ```
+
+```{r}
+options(digits = 7, scipen = 2)
+```
+
+
+```{r}
+data <- readr::read_csv(file = "../data/car_accidents/accidents.csv") %>%
+    mutate(season = as.factor(season))
+```
+
+# Variable Selection
+
+## Stepwise Selection
+
+```{r}
+lmod <- lm(injuries ~ . - county - pop_per_100k, data=data)
+```
+
+```{r}
+step(lmod, direction="both")
+```
+
+### Forward selection w/ BIC
+
+Let's look at BIC to see if we'll get a smaller model candidate.
+
+```{r}
+simple_model <- lm(injuries ~ 1, data=data)
+step(simple_model, scope = formula(lmod), direction = "forward", k = log(nobs(lmod)))
+```
+
+# Checking Model Structure
+
+## Larger Model
+
+```{r}
+lm_large <- lm(
+    injuries ~ season + deaths + bad_weather_accidents + median_income + mean_commuting_time,
+    data=data
+)
+
+plot(lm_large$fitted.values, lm_large$residuals)
+abline(h=0)
+```
+
+```{r}
+qqPlot(lm_large)
+```
+
+
+## Simpler Model
+
+```{r}
+lm_small <- lm(
+    injuries ~ season + deaths + bad_weather_accidents + mean_commuting_time,
+    data=data
+)
+
+plot(lm_small$fitted.values, lm_small$residuals)
+abline(h=0)
+```
+
+```{r}
+qqPlot(lm_small)
+```
+
+# Log Transforming Injuries
+
+## Variable Selection
+
+```{r}
+simple_model_log <- lm(I(log(injuries)) ~ 1, data=data)
+step(simple_model_log, scope = formula(lmod), direction = "forward", k = log(nobs(lmod)))
+```
+
+## Checking Structure
+
+```{r}
+small_model_log <- lm(I(log(injuries)) ~ season + deaths + bad_weather_accidents, data=data)
+```
+
+### Fitted vs. Residuals
+
+```{r}
+plot(small_model_log$fitted.values, small_model_log$residuals)
+abline(h=0)
+```
+
+### Checking Normality
+
+```{r}
+qqPlot(small_model_log)
+```
+

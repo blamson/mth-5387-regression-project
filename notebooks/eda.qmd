@@ -112,9 +112,9 @@ Median income may require some normalization later just to standardize the value
 
 Of note is that many of these variables may benefit from a log-transformation due to them following a seemingly log-normal distribution.
 
-# Bi-Variate Analysis
+# Bi-Variate Analysis (Death Response)
 
-Here we'll look into how each regressor relates to the response variable.
+Here we'll look into how each regressor relates to the response variable, death.
 
 ## Injuries
 
@@ -148,12 +148,6 @@ data %>%
     geom_point()
 ```
 
-```{r}
-data %>%
-    ggplot(aes(x=injuries, y=mean_commuting_time, color=season)) +
-    geom_point()
-```
-
 ## Season
 
 ```{r}
@@ -165,6 +159,40 @@ data %>%
 ## Takeaways
 
 There are shockingly few relationships here to speak of. I worry none of these predictors will perform particularly well, but we'll see.
+
+# Bi-Variate Analaysis (Injury Response)
+
+## Bad Weather
+
+```{r}
+data %>%
+    ggplot(aes(x=injuries, y=bad_weather_accidents, color=season)) +
+    geom_point()
+```
+
+## Median Income
+
+```{r}
+data %>%
+    ggplot(aes(x=injuries, y=median_income, color=season)) +
+    geom_point()
+```
+
+## Mean Commute Time
+
+```{r}
+data %>%
+    ggplot(aes(x=injuries, y=mean_commuting_time, color=season)) +
+    geom_point()
+```
+
+## Season
+
+```{r}
+data %>%
+    ggplot(aes(x=season, y=injuries)) +
+    geom_bar(stat="identity")
+```
 
 # Transformations
 
@@ -210,3 +238,41 @@ data %>%
 ## Takeaways
 
 Worth trying to use log transformed bad weather or injuries assuming they don't complicate interpretation too much. May be worth comparing models with and without the transformed variable.
+
+# Bi-Variate Analaysis (Log-Transformed Injury Response)
+
+## Bad Weather
+
+```{r}
+data %>%
+    ggplot(aes(x=log(injuries), y=bad_weather_accidents, color=season)) +
+    geom_point()
+```
+
+## Median Income
+
+```{r}
+data %>%
+    ggplot(aes(x=log(injuries), y=median_income, color=season)) +
+    geom_point()
+```
+
+## Mean Commute Time
+
+```{r}
+data %>%
+    ggplot(aes(x=log(injuries), y=mean_commuting_time, color=season)) +
+    geom_point()
+```
+
+## Season
+
+```{r}
+data %>%
+    ggplot(aes(x=season, y=log(injuries))) +
+    geom_bar(stat="identity")
+```
+
+## Takeaways
+
+Log transforming injuries doesn't seem to really change the relationships of these variables in meaningful ways. 
