@@ -107,7 +107,7 @@ problem_obs
 print(nrow(problem_obs))
 ```
 
-Oh looks like almost all of these have deaths of 0. Thats 43 observations. How many times do 0 deaths occur in our dataset?
+Oh looks like all of these have deaths of 0. Thats 42 observations. How many times do 0 deaths occur in our dataset?
 
 ```{r}
 data %>% 

@@ -54,6 +54,7 @@ df %>% head()
 ```
 
 # Data Skimming
+
 The `skimr` is my favorite way of quickly checking out a new dataset in R. Nice way to check missing values, distributions, summary stats, all in one. Looks great in HTML output too!
 
 ```{r}
@@ -179,6 +180,8 @@ commute_data
 # Join Datasets
 
 ```{r}
+num_years = n_distinct(df$year)
+
 df_final <- df_agg %>%
     dplyr::left_join(county_pop, by=dplyr::join_by(year, county == area)) %>%
     dplyr::left_join(income, by=dplyr::join_by(county == county)) %>%
@@ -187,9 +190,9 @@ df_final <- df_agg %>%
     group_by(county, season) %>%
     summarise(
         pop_per_100k = mean(pop_per_100k),
-        deaths = sum(deaths) / pop_per_100k,
-        injuries = sum(injuries) / pop_per_100k,
-        bad_weather_accidents = sum(bad_weather_accidents) / pop_per_100k,
+        deaths = sum(deaths) / pop_per_100k / num_years,
+        injuries = sum(injuries) / pop_per_100k / num_years,
+        bad_weather_accidents = sum(bad_weather_accidents) / pop_per_100k / num_years,
         median_income = median(median_income),
         mean_commuting_time = mean(mean_commuting_time)
     )
