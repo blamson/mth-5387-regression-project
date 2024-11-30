@@ -1,0 +1,111 @@
+---
+title: "Influential Observations"
+author: "Brady Lamson"
+format: html
+editor: visual
+---
+
+# Imports
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(caret)
+library(leaps)
+library(car)
+library(effects)
+library(api2lm)
+```
+
+```{r}
+options(digits = 7, scipen = 2)
+```
+
+# Data Ingestion
+
+```{r}
+data <- readr::read_csv(file = "../data/car_accidents/accidents.csv") %>%
+    mutate(season = as.factor(season))
+```
+
+# Model Initialization
+
+```{r}
+model <- lm(I(log(injuries)) ~ season + deaths + bad_weather_accidents, data=data)
+```
+
+# Outliers
+
+```{r}
+stud_residuals <- rstudent(model)
+summary(stud_residuals)
+```
+
+```{r}
+plot(rstudent(model), ylab = "studentized residuals")
+```
+
+```{r}
+api2lm::outlier_plot(model)
+```
+
+```{r}
+api2lm::outlier_test(model)
+```
+
+```{r}
+data[56,]
+```
+
+```{r}
+summary(data)
+```
+
+So our outlier is:
+    - minimum for deaths
+    - minimum for injuries (this is huge)
+    - 1st quantile for bad weather
+    - between min and 1st quantile for income
+    - average commute time
+    
+In particular the number of injuries here is extremely low. 70.66 per capita deaths is so much lower than even the first quartile. No wonder this is an outlier.
+    
+# Leverage Points
+
+```{r}
+api2lm::leverage_plot(model)
+```
+
+None of our leverage points with leverage values greater than 0.5, so we probably don't need to pay too much mind here. 161 and 162 are definitely far larger than the rest though. Let's at least take a look.
+
+```{r}
+data[161:162,]
+```
+
+So mineral county huh, this is a county with a very small population of around 900 people. The death injury and bad weather values are huge but remember this is per-capita. We see about 5 and 4 deaths here which is very small but extremely large when we scale it by population. That is one of the limitations of per-capita metrics, any counties with extremely small populations can mess with things a bit. 
+
+# Influential Observations
+
+```{r}
+api2lm::dfbetas_plot(model)
+```
+
+None of these points go above a DFBETAS value of +-1, so these aren't particularly extreme.
+
+## Influence Plots
+
+```{r}
+api2lm::influence_plot(model)
+```
+
+Let's take a look at 109 and 110.
+
+```{r}
+data[109:110,]
+```
+
+Unsurprisingly, another extremely tiny county. This is making me wonder if a second model specifically for smaller counties would be a good idea! It's outside the scope of this project, but this is something to consider.
+
+# Conclusion
+
+It appears a lot of our points of interest here come from small counties. In an ideal situation I think treating these small counties as a separate population and using a different model for them would be best. However, as I do not have that luxury I have no good reason to exclude these data points from the model. 

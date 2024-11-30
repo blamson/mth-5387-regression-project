@@ -14,6 +14,8 @@ library(ggplot2)
 library(caret)
 library(leaps)
 library(car)
+library(effects)
+library(api2lm)
 ```
 
 ```{r}
@@ -110,3 +112,37 @@ abline(h=0)
 qqPlot(small_model_log)
 ```
 
+# Comparing model to complete model
+
+We'll be using cross validation for this comparison.
+
+```{r}
+red_rmse_means <- c()
+full_rmse_means <- c()
+set.seed(100)
+cv_fold <- trainControl(method="cv", number=100)
+full_model_formula = log(injuries) ~ . - county - pop_per_100k
+
+model_small <- train(formula(small_model_log), data=data, trControl=cv_fold, method="lm")
+model_full <- train(full_model_formula, data=data, trControl=cv_fold, method="lm")
+resamp <- resamples(list(model_small, model_full),
+                modelNames = c("reduced", "complete"))
+summary_results <- summary(resamp, metric = c("RMSE", "MAE"))
+summary_results
+```
+
+Tossup whether the reduced or full model has better predictive power. I will opt for the reduced model as it has comparable predictive power while not including the added complexity.
+
+# Effect Plots
+
+```{r}
+plot(predictorEffect("deaths", small_model_log))
+```
+
+```{r}
+plot(predictorEffect("bad_weather_accidents", small_model_log))
+```
+
+```{r}
+plot(predictorEffect("season", small_model_log))
+```

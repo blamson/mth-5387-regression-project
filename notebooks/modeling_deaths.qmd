@@ -74,7 +74,11 @@ Okay this looks really bad. These residuals very clearly indicate a structural i
 
 ```{r}
 lm2p_transformed <- lm(I(log(1 + deaths)) ~ I(log(injuries)) + mean_commuting_time, data=data)
-plot(lm2p_transformed$fitted.values, lm2p_transformed$residuals)
+plot(
+    lm2p_transformed$fitted.values, lm2p_transformed$residuals,
+    xlab="Fitted Values", ylab="Residuals",
+    title=""
+)
 ```
 
 So this does look a LOT better. However we seem to have two distinct groups in our residuals here. The top portion is well behaved, but there is a clear line at the bottom of this plot that is indicating something structurally wrong with our setup here.
