@@ -82,7 +82,7 @@ None of our leverage points with leverage values greater than 0.5, so we probabl
 data[161:162,]
 ```
 
-So mineral county huh, this is a county with a very small population of around 900 people. The death injury and bad weather values are huge but remember this is per-capita. We see about 5 and 4 deaths here which is very small but extremely large when we scale it by population. That is one of the limitations of per-capita metrics, any counties with extremely small populations can mess with things a bit. 
+So mineral county huh, this is a county with a very small population of around 900 people. The death injury and bad weather values are huge but remember this is per-capita. We see about 1.5 deaths here which is very small but extremely large when we scale it by population. That is one of the limitations of per-capita metrics, any counties with extremely small populations can mess with things a bit. 
 
 # Influential Observations
 
