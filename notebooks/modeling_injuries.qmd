@@ -145,6 +145,14 @@ plot(predictorEffect("bad_weather_accidents", small_model_log))
 plot(predictorEffect("season", small_model_log))
 ```
 
+# Collinearity Checks
+
+```{r}
+car::vif(small_model_log)
+```
+
+None of the generalized VIFs are high enough to be a concern so there doesn't appear to be an issue of collinearity in the model.
+
 # Model Interpretation
 
 ```{r}
@@ -161,10 +169,9 @@ e <- exp(1)
 e^model_results$coefficients[, 1]
 ```
 
-
 ## Intercept
 
-We expect a typical Colorado county in the fall with 0 deaths and 0 bad weather accidents to see around 125.87 injuries. 
+We expect a typical Colorado county in the fall with 0 deaths and 0 bad weather accidents to see around 125.87 injuries.
 
 ## Season
 
