@@ -2,7 +2,7 @@
 title: "eda"
 author: "Brady Lamson"
 format: html
-editor: visual
+editor: source
 ---
 
 # Tasks
@@ -65,12 +65,18 @@ Appears to follow a log-normal distribution, candidate for log-transformation la
 ## Injuries
 
 ```{r}
-data %>%
+fig <- data %>%
     ggplot(aes(x=injuries)) +
     # geom_histogram(color="black") +
     geom_density() +
     ggtitle("Injuries in Car Accidents") +
-    labs(x="Injuries per Capita", y="Density")
+    labs(
+        x="Injuries per 100k Residents", y="Density", 
+        subtitle = "Variable seems to follow a log normal distribution."
+    )
+
+fig
+ggsave(plot=fig, filename="../presentation/presentation_images/injury_dist.png")
 ```
 
 ## Bad Weather
@@ -167,7 +173,11 @@ There are shockingly few relationships here to speak of. I worry none of these p
 ```{r}
 data %>%
     ggplot(aes(x=injuries, y=bad_weather_accidents, color=season)) +
-    geom_point()
+    geom_point() +
+    labs(
+        y="Number of accidents in bad weather",
+        x="Number of injuries per 100k residents"
+    )
 ```
 
 ## Median Income
@@ -217,11 +227,18 @@ data %>%
 ## Injuries
 
 ```{r}
-data %>%
+fig <- data %>%
     ggplot(aes(x=log(injuries))) +
     geom_density() +
     ggtitle("Injuries in Car Accidents") +
-    labs(x="Injuries per Capita", y="Density")
+    labs(
+        x="Natural Log of Injuries per 100k Residents", 
+        y="Density",
+        subtitle="Log transformation of injuries results in a distribution that appears more normal. "
+    )
+
+fig
+ggsave(plot=fig, filename="../presentation/presentation_images/log_injury_dist.png")
 ```
 
 ## Bad Weather
@@ -241,28 +258,79 @@ Worth trying to use log transformed bad weather or injuries assuming they don't 
 
 # Bi-Variate Analaysis (Log-Transformed Injury Response)
 
+## Deaths
+
+```{r}
+fig <- data %>%
+    ggplot(aes(x=log(injuries), y=deaths, color=season)) +
+    geom_point()+
+    labs(
+        y="Number of deaths per 100k residents",
+        x="Natural log of injuries per 100k residents"
+    ) +
+    ggtitle("Deaths vs. Injuries")
+
+fig
+ggsave(plot=fig, filename="../presentation/presentation_images/deaths_vs_injuries.png")
+```
+
 ## Bad Weather
 
 ```{r}
-data %>%
+fig <- data %>%
     ggplot(aes(x=log(injuries), y=bad_weather_accidents, color=season)) +
-    geom_point()
+    geom_point() +
+    labs(
+        y="Number of accidents in bad weather",
+        x="Natural log of injuries per 100k residents"
+    ) +
+    ggtitle("Bad Weather Accidents vs. Injuries")
+
+fig
+
+ggsave(plot=fig, filename="../presentation/presentation_images/weather_vs_injuries.png")
 ```
 
 ## Median Income
 
 ```{r}
-data %>%
+fig <- data %>%
     ggplot(aes(x=log(injuries), y=median_income, color=season)) +
+    geom_point()+
+    labs(
+        y="Median County Household Income",
+        x="Natural log of injuries per 100k residents"
+    ) +
+    ggtitle("Household Income vs. Injuries")
+
+fig
+
+ggsave(plot=fig, filename="../presentation/presentation_images/income_vs_injuries.png")
+```
+
+```{r}
+data %>%
+    group_by(county) %>%
+    summarise(injuries = mean(injuries), median_income = mean(median_income)) %>%
+    ggplot(aes(x=log(injuries), y=median_income)) +
     geom_point()
 ```
 
 ## Mean Commute Time
 
 ```{r}
-data %>%
+fig <- data %>%
     ggplot(aes(x=log(injuries), y=mean_commuting_time, color=season)) +
-    geom_point()
+    geom_point()+
+    labs(
+        y="Average County Commute Time",
+        x="Natural log of injuries per 100k residents"
+    ) +
+    ggtitle("Commute Time vs. Injuries")
+
+fig
+
+ggsave(plot=fig, filename="../presentation/presentation_images/commute_vs_injuries.png")
 ```
 
 ## Season
@@ -275,4 +343,4 @@ data %>%
 
 ## Takeaways
 
-Log transforming injuries doesn't seem to really change the relationships of these variables in meaningful ways. 
+Log transforming injuries doesn't seem to really change the relationships of these variables in meaningful ways.
