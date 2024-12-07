@@ -218,7 +218,7 @@ Here are the variables worth consideration for transformation
 
 ```{r}
 data %>%
-    ggplot(aes(x=log(deaths))) +
+    ggplot(aes(x=log(deaths + 1))) +
     geom_density() +
     ggtitle("Deaths in Car Accidents") +
     labs(x="Deaths per Capita", y="Density")
@@ -228,7 +228,7 @@ data %>%
 
 ```{r}
 fig <- data %>%
-    ggplot(aes(x=log(injuries))) +
+    ggplot(aes(x=log(injuries + 1))) +
     geom_density() +
     ggtitle("Injuries in Car Accidents") +
     labs(
@@ -245,7 +245,7 @@ ggsave(plot=fig, filename="../presentation/presentation_images/log_injury_dist.p
 
 ```{r}
 data %>%
-    ggplot(aes(x=log(bad_weather_accidents))) +
+    ggplot(aes(x=log(bad_weather_accidents + 1))) +
     # geom_histogram(color="black") +
     geom_density() +
     ggtitle("Bad Weather Accidents") +
@@ -262,7 +262,7 @@ Worth trying to use log transformed bad weather or injuries assuming they don't 
 
 ```{r}
 fig <- data %>%
-    ggplot(aes(x=log(injuries), y=deaths, color=season)) +
+    ggplot(aes(x=log(injuries + 1), y=deaths, color=season)) +
     geom_point()+
     labs(
         y="Number of deaths per 100k residents",
@@ -278,7 +278,7 @@ ggsave(plot=fig, filename="../presentation/presentation_images/deaths_vs_injurie
 
 ```{r}
 fig <- data %>%
-    ggplot(aes(x=log(injuries), y=bad_weather_accidents, color=season)) +
+    ggplot(aes(x=log(injuries + 1), y=bad_weather_accidents, color=season)) +
     geom_point() +
     labs(
         y="Number of accidents in bad weather",
@@ -295,7 +295,7 @@ ggsave(plot=fig, filename="../presentation/presentation_images/weather_vs_injuri
 
 ```{r}
 fig <- data %>%
-    ggplot(aes(x=log(injuries), y=median_income, color=season)) +
+    ggplot(aes(x=log(injuries + 1), y=median_income, color=season)) +
     geom_point()+
     labs(
         y="Median County Household Income",
@@ -320,7 +320,7 @@ data %>%
 
 ```{r}
 fig <- data %>%
-    ggplot(aes(x=log(injuries), y=mean_commuting_time, color=season)) +
+    ggplot(aes(x=log(injuries + 1), y=mean_commuting_time, color=season)) +
     geom_point()+
     labs(
         y="Average County Commute Time",
@@ -337,7 +337,7 @@ ggsave(plot=fig, filename="../presentation/presentation_images/commute_vs_injuri
 
 ```{r}
 data %>%
-    ggplot(aes(x=season, y=log(injuries))) +
+    ggplot(aes(x=season, y=log(injuries + 1))) +
     geom_bar(stat="identity")
 ```
 
