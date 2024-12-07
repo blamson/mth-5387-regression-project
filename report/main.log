@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024/Homebrew) (preloaded format=pdflatex 2024.3.20)  5 DEC 2024 14:55
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024/Homebrew) (preloaded format=pdflatex 2024.3.20)  6 DEC 2024 19:37
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -235,28 +235,28 @@ Package: tabularx 2023/07/08 v2.11c `tabularx' package (DPC)
 \TX@ftn=\toks21
 )
 LaTeX Font Info:    Trying to load font information for OT1+ptm on input line 2
-0.
+2.
 
 (/opt/homebrew/Cellar/texlive/20240312/share/texmf-dist/tex/latex/psnfss/ot1ptm
 .fd
 File: ot1ptm.fd 2001/06/04 font definitions for OT1/ptm.
-) (./main.aux (./sections/title_page.aux) (./sections/eda.aux))
+) (./main.aux (./sections/title_page.aux) (./sections/results.aux))
 \openout1 = `main.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 20.
-LaTeX Font Info:    ... okay on input line 20.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 20.
-LaTeX Font Info:    ... okay on input line 20.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 20.
-LaTeX Font Info:    ... okay on input line 20.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 20.
-LaTeX Font Info:    ... okay on input line 20.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 20.
-LaTeX Font Info:    ... okay on input line 20.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 20.
-LaTeX Font Info:    ... okay on input line 20.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 20.
-LaTeX Font Info:    ... okay on input line 20.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 22.
+LaTeX Font Info:    ... okay on input line 22.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 22.
+LaTeX Font Info:    ... okay on input line 22.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 22.
+LaTeX Font Info:    ... okay on input line 22.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 22.
+LaTeX Font Info:    ... okay on input line 22.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 22.
+LaTeX Font Info:    ... okay on input line 22.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 22.
+LaTeX Font Info:    ... okay on input line 22.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 22.
+LaTeX Font Info:    ... okay on input line 22.
 
 (/opt/homebrew/Cellar/texlive/20240312/share/texmf-dist/tex/context/base/mkii/s
 upp-pdf.mkii
@@ -328,9 +328,9 @@ e
 {/opt/homebrew/Cellar/texlive/20240312/share/texmf-dist/fonts/map/pdftex/updmap
 /pdftex.map}{/opt/homebrew/Cellar/texlive/20240312/share/texmf-dist/fonts/enc/d
 vips/base/8r.enc}])
-\openout2 = `sections/eda.aux'.
+\openout2 = `sections/results.aux'.
 
- (./sections/eda.tex
+ (./sections/results.tex
 (./tables/variables.tex
 (/opt/homebrew/Cellar/texlive/20240312/share/texmf-dist/tex/latex/psnfss/ot1ztm
 cm.fd)
@@ -346,35 +346,59 @@ File: ../presentation/presentation_images/injury_dist.png Graphic file (type pn
 g)
 <use ../presentation/presentation_images/injury_dist.png>
 Package pdftex.def Info: ../presentation/presentation_images/injury_dist.png  u
-sed on input line 12.
+sed on input line 14.
 (pdftex.def)             Requested size: 362.37569pt x 223.84473pt.
  [1
 
 
 
- <../presentation/presentation_images/injury_dist.png>]
-(./tables/injury_summary.tex) (./tables/predictor_summaries.tex)) [2]
-(./main.aux (./sections/title_page.aux) (./sections/eda.aux))
+] (./tables/injury_summary.tex) (./tables/predictor_summaries.tex
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+) [2 <../presentation/presentation_images/injury_dist.png>] [3]
+<../presentation/presentation_images/deaths_residual_plot.png, id=20, 1545.775p
+t x 954.56625pt>
+File: ../presentation/presentation_images/deaths_residual_plot.png Graphic file
+ (type png)
+<use ../presentation/presentation_images/deaths_residual_plot.png>
+Package pdftex.def Info: ../presentation/presentation_images/deaths_residual_pl
+ot.png  used on input line 48.
+(pdftex.def)             Requested size: 362.37569pt x 223.7696pt.
+ [4 <../presentation/presentation_images/deaths_residual_plot.png>]
+(./tables/small_counties.tex
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+) [5] [6] (./tables/confidence_intervals.tex)
+(./tables/regression_coefficients.tex) [7]) [8] [9] (./main.aux
+(./sections/title_page.aux) (./sections/results.aux))
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-02-20>
  ***********
  ) 
 Here is how much of TeX's memory you used:
- 3528 strings out of 474116
- 62925 string characters out of 5733619
+ 3573 strings out of 474116
+ 64391 string characters out of 5733619
  1936187 words of memory out of 5000000
- 25816 multiletter control sequences out of 15000+600000
- 577744 words of font info for 69 fonts, out of 8000000 for 9000
+ 25839 multiletter control sequences out of 15000+600000
+ 584388 words of font info for 82 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 94i,11n,107p,634b,293s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</opt/homebrew/Cellar/texlive/20240312/share/texmf-dist/fonts/type1/urw/times
-/utmb8a.pfb></opt/homebrew/Cellar/texlive/20240312/share/texmf-dist/fonts/type1
-/urw/times/utmr8a.pfb>
-Output written on main.pdf (3 pages, 150607 bytes).
+ 94i,11n,107p,1122b,293s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</opt/homebrew/Cellar/texlive/20240312/share/texmf-dist/fonts/type1/public/am
+sfonts/cm/cmmi10.pfb></opt/homebrew/Cellar/texlive/20240312/share/texmf-dist/fo
+nts/type1/public/amsfonts/cm/cmr10.pfb></opt/homebrew/Cellar/texlive/20240312/s
+hare/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></opt/homebrew/Cellar
+/texlive/20240312/share/texmf-dist/fonts/type1/urw/symbol/usyr.pfb></opt/homebr
+ew/Cellar/texlive/20240312/share/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></
+opt/homebrew/Cellar/texlive/20240312/share/texmf-dist/fonts/type1/urw/times/utm
+r8a.pfb></opt/homebrew/Cellar/texlive/20240312/share/texmf-dist/fonts/type1/urw
+/times/utmri8a.pfb>
+Output written on main.pdf (10 pages, 303505 bytes).
 PDF statistics:
- 28 PDF objects out of 1000 (max. 8388607)
- 16 compressed objects within 1 object stream
+ 78 PDF objects out of 1000 (max. 8388607)
+ 47 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
- 6 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 11 words of extra memory for PDF output out of 10000 (max. 10000000)
 
